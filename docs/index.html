@@ -1,101 +1,83 @@
-<script>
-let checkExist = setInterval(function() {
-    const canvas = document.querySelector('canvas');
-    if (canvas) {
-        clearInterval(checkExist);
-        
-        // Button Box Location (Top-right of Hu Tao, below coffee cup)
-        const box = document.createElement('div');
-        box.id = "recording_box";
-        box.style.cssText = 'position:fixed; top:130px; right:15px; z-index:999999; background:rgba(20,20,20,0.8); padding:10px; border-radius:10px; border: 1px solid #444; box-shadow: 0px 4px 10px rgba(0,0,0,0.5);';
-        
-        const startBtn = document.createElement('button');
-        startBtn.innerText = '🔴 Rec+Sound';
-        startBtn.style.cssText = 'background:#4CAF50; color:white; padding:10px 15px; border:none; border-radius:5px; margin-bottom:8px; width:100%; font-weight:bold; font-size:14px;';
-        
-        const stopBtn = document.createElement('button');
-        stopBtn.innerText = '⏹ Save';
-        stopBtn.style.cssText = 'background:#f44336; color:white; padding:10px 15px; border:none; border-radius:5px; width:100%; font-weight:bold; font-size:14px; opacity:0.5;';
-        stopBtn.disabled = true;
+<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="description" content="Web viewer for Genshin models, HSR models (Honkai Star Rail) and ZZZ (Zenless Zone Zero) models."><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="keywords" content="Genshin models, HSR models, ZZZ models, MMD models, Genshin Impact, Honkai Star Rail, Zenless Zone Zero, MMD models"><meta name="author" content="Phoshco"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Genshin/HSR/ZZZ model web viewer"><meta name="twitter:description" content="Web viewer for Genshin models, HSR models (Honkai Star Rail) and ZZZ (Zenless Zone Zero) models."><meta name="twitter:image" content="https://raw.githubusercontent.com/Phoshco/model-viewer/main/banner.jpeg"><meta property="og:title" content="Genshin/HSR/ZZZ model web viewer"><meta property="og:description" content="Web viewer for Genshin models, HSR models (Honkai Star Rail) and ZZZ (Zenless Zone Zero) models."><meta property="og:image" content="https://raw.githubusercontent.com/Phoshco/model-viewer/main/banner.jpeg"><meta property="og:image:width" content="500"/><meta property="og:url" content="https://phoshco.github.io/model-viewer/"><title>Genshin/HSR/ZZZ model web viewer</title><meta name="google-site-verification" content="cf2loS-tBYbqBxZTQldCj9R5hlEGfutUUX7zk37SfCw"/><script type="application/ld+json">{
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Genshin/HSR/ZZZ model web viewer",
+        "operatingSystem": "Web",
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://phoshco.github.io/model-viewer/{search_term_string}",
+            "query-input": "required name=search_term_string"
+        },
+        "url": "https://phoshco.github.io/model-viewer/",
+        "inLanguage": "en",
+        "description": "Web viewer for Genshin models, HSR models (Honkai Star Rail) and ZZZ (Zenless Zone Zero) models."
+    }</script><link rel="icon" href="68ea91f434704af2d0b8.png?" type="image/png"><link rel="icon" type="image/svg+xml" href="fc9491953c163c5d10ad.svg"/><link rel="shortcut icon" href="abb0a956d202d83effd1.ico"/><link rel="apple-touch-icon" href="68ea91f434704af2d0b8.png"><link rel="apple-touch-icon" sizes="152x152" href="7edac1a84e5910ad3f31.png"><link rel="apple-touch-icon" sizes="180x180" href="a2c0a921f57fa936b40a.png"><link rel="apple-touch-icon" sizes="167x167" href="2fcbd43d6cc9a0ec531d.png"><meta name="apple-mobile-web-app-title" content="Genshin/HSR/ZZZ model viewer"><link rel="manifest" href="3674552cb0262bd4f1fc.webmanifest"/><style>body,html{overflow:hidden;width:100%;height:100%;margin:0;padding:0;box-sizing:border-box}body{position:relative}</style><script defer="defer" src="603.bundle.js"></script><script defer="defer" src="main.bundle.js"></script></head><body style="background-color:#000">
 
-        box.appendChild(startBtn);
-        box.appendChild(stopBtn);
-        document.body.appendChild(box);
+<script>
+window.addEventListener('load', function() {
+    setTimeout(function() {
+        const canvas = document.querySelector('canvas');
+        if (!canvas) return;
 
         let mediaRecorder;
-        let chunks = [];
+        let recordedChunks = [];
 
-        startBtn.onclick = async () => {
-            // Find canvas video stream
-            const canvasStream = canvas.captureStream(60);
-            
-            // Critical Step: Find and capture internal audio stream
-            const audioElement = document.querySelector('audio');
-            let combinedStream;
+        const container = document.createElement('div');
+        container.style.position = 'fixed';
+        container.style.top = '10px';
+        container.style.right = '10px';
+        container.style.zIndex = '99999';
 
-            if (audioElement) {
-                try {
-                    // Try to direct stream. This may require interaction first on phone.
-                    // If audioElement has a stream source, we use it.
-                    // This is complex on phone browser due to security.
-                    console.log("Audio element found. Trying to extract stream...");
-                    
-                    // Most phone browsers block this. A reliable backup is needed.
-                    // We must tell the user that this may not work on phone browser directly.
-                    // This programmatic audio capture is very browser-dependent.
-                    combinedStream = canvasStream; // Fallback to video only
-                    
-                    // Attempt programmatic audio (advanced, might fail)
-                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    const source = audioCtx.createMediaElementSource(audioElement);
-                    const destination = audioCtx.createMediaStreamDestination();
-                    source.connect(destination);
-                    source.connect(audioCtx.destination); // Keep playing to speakers
-                    const audioStream = destination.stream;
-                    
-                    combinedStream = new MediaStream([
-                        canvasStream.getVideoTracks()[0],
-                        audioStream.getAudioTracks()[0]
-                    ]);
-                    console.log("Audio and Video combined!");
-                } catch (e) {
-                    console.error('Programmatic audio failed, using video only. Use phone screen recorder instead.', e);
-                    combinedStream = canvasStream;
-                    alert("Sound Programmatic Capture Failed: Browser blocked sound capture. Video recorded WITHOUT sound. Read response below for workaround.");
-                }
-            } else {
-                console.error("Audio element not found. Video recorded WITHOUT sound.");
-                combinedStream = canvasStream;
-                alert("Sound Capture Failed: Audio element not found. Video recorded WITHOUT sound.");
-            }
-            
-            mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm' });
-            chunks = [];
-            mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+        const startBtn = document.createElement('button');
+        startBtn.innerText = '🔴 Record';
+        startBtn.style.marginRight = '5px';
+        startBtn.style.padding = '10px';
+        startBtn.style.background = '#4CAF50';
+        startBtn.style.color = 'white';
+        startBtn.style.border = 'none';
+        startBtn.style.borderRadius = '5px';
+        startBtn.style.fontWeight = 'bold';
+
+        const stopBtn = document.createElement('button');
+        stopBtn.innerText = '⏹ Save';
+        stopBtn.style.padding = '10px';
+        stopBtn.style.background = '#f44336';
+        stopBtn.style.color = 'white';
+        stopBtn.style.border = 'none';
+        stopBtn.style.borderRadius = '5px';
+        stopBtn.style.fontWeight = 'bold';
+        stopBtn.disabled = true;
+
+        container.appendChild(startBtn);
+        container.appendChild(stopBtn);
+        document.body.appendChild(container);
+
+        startBtn.onclick = () => {
+            const stream = canvas.captureStream(60);
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+            recordedChunks = [];
+            mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
             mediaRecorder.onstop = () => {
-                const url = URL.createObjectURL(new Blob(chunks, { type: 'video/webm' }));
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'Clean_HuTao_Recording.webm';
+                a.download = 'Genshin_MMD_Capture.webm';
                 a.click();
             };
-            
             mediaRecorder.start();
-            startBtn.innerText = '⏳ Recording...';
-            startBtn.style.background = '#555';
             startBtn.disabled = true;
-            stopBtn.style.opacity = '1';
+            startBtn.innerText = '⏳ Recording...';
             stopBtn.disabled = false;
         };
 
         stopBtn.onclick = () => {
             mediaRecorder.stop();
-            startBtn.innerText = '🔴 Rec+Sound';
-            startBtn.style.background = '#4CAF50';
             startBtn.disabled = false;
-            stopBtn.style.opacity = '0.5';
+            startBtn.innerText = '🔴 Record';
             stopBtn.disabled = true;
         };
-    }
-}, 1500);
+    }, 4000); 
+});
 </script>
+</body></html>
