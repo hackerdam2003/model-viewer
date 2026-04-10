@@ -2,14 +2,15 @@
 let checkExist = setInterval(function() {
     const canvas = document.querySelector('canvas');
     if (canvas) {
-        clearInterval(checkExist); // Canvas mil gaya, ab check karna band karo
+        clearInterval(checkExist);
         
-        // Button ke liye ek box banana
+        // Button Box Location (Top-right of Hu Tao, below coffee cup)
         const box = document.createElement('div');
-        box.style.cssText = 'position:fixed; top:80px; right:15px; z-index:999999; background:rgba(20,20,20,0.85); padding:12px; border-radius:10px; border: 1px solid #444; box-shadow: 0px 4px 10px rgba(0,0,0,0.5);';
+        box.id = "recording_box";
+        box.style.cssText = 'position:fixed; top:130px; right:15px; z-index:999999; background:rgba(20,20,20,0.8); padding:10px; border-radius:10px; border: 1px solid #444; box-shadow: 0px 4px 10px rgba(0,0,0,0.5);';
         
         const startBtn = document.createElement('button');
-        startBtn.innerText = '🔴 Record';
+        startBtn.innerText = '🔴 Rec+Sound';
         startBtn.style.cssText = 'background:#4CAF50; color:white; padding:10px 15px; border:none; border-radius:5px; margin-bottom:8px; width:100%; font-weight:bold; font-size:14px;';
         
         const stopBtn = document.createElement('button');
@@ -24,18 +25,58 @@ let checkExist = setInterval(function() {
         let mediaRecorder;
         let chunks = [];
 
-        startBtn.onclick = () => {
-            const stream = canvas.captureStream(60);
-            mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+        startBtn.onclick = async () => {
+            // Find canvas video stream
+            const canvasStream = canvas.captureStream(60);
+            
+            // Critical Step: Find and capture internal audio stream
+            const audioElement = document.querySelector('audio');
+            let combinedStream;
+
+            if (audioElement) {
+                try {
+                    // Try to direct stream. This may require interaction first on phone.
+                    // If audioElement has a stream source, we use it.
+                    // This is complex on phone browser due to security.
+                    console.log("Audio element found. Trying to extract stream...");
+                    
+                    // Most phone browsers block this. A reliable backup is needed.
+                    // We must tell the user that this may not work on phone browser directly.
+                    // This programmatic audio capture is very browser-dependent.
+                    combinedStream = canvasStream; // Fallback to video only
+                    
+                    // Attempt programmatic audio (advanced, might fail)
+                    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    const source = audioCtx.createMediaElementSource(audioElement);
+                    const destination = audioCtx.createMediaStreamDestination();
+                    source.connect(destination);
+                    source.connect(audioCtx.destination); // Keep playing to speakers
+                    const audioStream = destination.stream;
+                    
+                    combinedStream = new MediaStream([
+                        canvasStream.getVideoTracks()[0],
+                        audioStream.getAudioTracks()[0]
+                    ]);
+                    console.log("Audio and Video combined!");
+                } catch (e) {
+                    console.error('Programmatic audio failed, using video only. Use phone screen recorder instead.', e);
+                    combinedStream = canvasStream;
+                    alert("Sound Programmatic Capture Failed: Browser blocked sound capture. Video recorded WITHOUT sound. Read response below for workaround.");
+                }
+            } else {
+                console.error("Audio element not found. Video recorded WITHOUT sound.");
+                combinedStream = canvasStream;
+                alert("Sound Capture Failed: Audio element not found. Video recorded WITHOUT sound.");
+            }
+            
+            mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm' });
             chunks = [];
-            
             mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-            
             mediaRecorder.onstop = () => {
                 const url = URL.createObjectURL(new Blob(chunks, { type: 'video/webm' }));
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'HuTao_Dance.webm';
+                a.download = 'Clean_HuTao_Recording.webm';
                 a.click();
             };
             
@@ -49,12 +90,12 @@ let checkExist = setInterval(function() {
 
         stopBtn.onclick = () => {
             mediaRecorder.stop();
-            startBtn.innerText = '🔴 Record';
+            startBtn.innerText = '🔴 Rec+Sound';
             startBtn.style.background = '#4CAF50';
             startBtn.disabled = false;
             stopBtn.style.opacity = '0.5';
             stopBtn.disabled = true;
         };
     }
-}, 1500); // Har 1.5 second me check karega
+}, 1500);
 </script>
