@@ -1,83 +1,60 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="description" content="Web viewer for Genshin models, HSR models (Honkai Star Rail) and ZZZ (Zenless Zone Zero) models."><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="keywords" content="Genshin models, HSR models, ZZZ models, MMD models, Genshin Impact, Honkai Star Rail, Zenless Zone Zero, MMD models"><meta name="author" content="Phoshco"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Genshin/HSR/ZZZ model web viewer"><meta name="twitter:description" content="Web viewer for Genshin models, HSR models (Honkai Star Rail) and ZZZ (Zenless Zone Zero) models."><meta name="twitter:image" content="https://raw.githubusercontent.com/Phoshco/model-viewer/main/banner.jpeg"><meta property="og:title" content="Genshin/HSR/ZZZ model web viewer"><meta property="og:description" content="Web viewer for Genshin models, HSR models (Honkai Star Rail) and ZZZ (Zenless Zone Zero) models."><meta property="og:image" content="https://raw.githubusercontent.com/Phoshco/model-viewer/main/banner.jpeg"><meta property="og:image:width" content="500"/><meta property="og:url" content="https://phoshco.github.io/model-viewer/"><title>Genshin/HSR/ZZZ model web viewer</title><meta name="google-site-verification" content="cf2loS-tBYbqBxZTQldCj9R5hlEGfutUUX7zk37SfCw"/><script type="application/ld+json">{
-        "@context": "https://schema.org",
-        "@type": "SoftwareApplication",
-        "name": "Genshin/HSR/ZZZ model web viewer",
-        "operatingSystem": "Web",
-        "potentialAction": {
-            "@type": "SearchAction",
-            "target": "https://phoshco.github.io/model-viewer/{search_term_string}",
-            "query-input": "required name=search_term_string"
-        },
-        "url": "https://phoshco.github.io/model-viewer/",
-        "inLanguage": "en",
-        "description": "Web viewer for Genshin models, HSR models (Honkai Star Rail) and ZZZ (Zenless Zone Zero) models."
-    }</script><link rel="icon" href="68ea91f434704af2d0b8.png?" type="image/png"><link rel="icon" type="image/svg+xml" href="fc9491953c163c5d10ad.svg"/><link rel="shortcut icon" href="abb0a956d202d83effd1.ico"/><link rel="apple-touch-icon" href="68ea91f434704af2d0b8.png"><link rel="apple-touch-icon" sizes="152x152" href="7edac1a84e5910ad3f31.png"><link rel="apple-touch-icon" sizes="180x180" href="a2c0a921f57fa936b40a.png"><link rel="apple-touch-icon" sizes="167x167" href="2fcbd43d6cc9a0ec531d.png"><meta name="apple-mobile-web-app-title" content="Genshin/HSR/ZZZ model viewer"><link rel="manifest" href="3674552cb0262bd4f1fc.webmanifest"/><style>body,html{overflow:hidden;width:100%;height:100%;margin:0;padding:0;box-sizing:border-box}body{position:relative}</style><script defer="defer" src="603.bundle.js"></script><script defer="defer" src="main.bundle.js"></script></head><body style="background-color:#000">
-
 <script>
-window.addEventListener('load', function() {
-    setTimeout(function() {
-        const canvas = document.querySelector('canvas');
-        if (!canvas) return;
-
-        let mediaRecorder;
-        let recordedChunks = [];
-
-        const container = document.createElement('div');
-        container.style.position = 'fixed';
-        container.style.top = '10px';
-        container.style.right = '10px';
-        container.style.zIndex = '99999';
-
+let checkExist = setInterval(function() {
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+        clearInterval(checkExist); // Canvas mil gaya, ab check karna band karo
+        
+        // Button ke liye ek box banana
+        const box = document.createElement('div');
+        box.style.cssText = 'position:fixed; top:80px; right:15px; z-index:999999; background:rgba(20,20,20,0.85); padding:12px; border-radius:10px; border: 1px solid #444; box-shadow: 0px 4px 10px rgba(0,0,0,0.5);';
+        
         const startBtn = document.createElement('button');
         startBtn.innerText = '🔴 Record';
-        startBtn.style.marginRight = '5px';
-        startBtn.style.padding = '10px';
-        startBtn.style.background = '#4CAF50';
-        startBtn.style.color = 'white';
-        startBtn.style.border = 'none';
-        startBtn.style.borderRadius = '5px';
-        startBtn.style.fontWeight = 'bold';
-
+        startBtn.style.cssText = 'background:#4CAF50; color:white; padding:10px 15px; border:none; border-radius:5px; margin-bottom:8px; width:100%; font-weight:bold; font-size:14px;';
+        
         const stopBtn = document.createElement('button');
         stopBtn.innerText = '⏹ Save';
-        stopBtn.style.padding = '10px';
-        stopBtn.style.background = '#f44336';
-        stopBtn.style.color = 'white';
-        stopBtn.style.border = 'none';
-        stopBtn.style.borderRadius = '5px';
-        stopBtn.style.fontWeight = 'bold';
+        stopBtn.style.cssText = 'background:#f44336; color:white; padding:10px 15px; border:none; border-radius:5px; width:100%; font-weight:bold; font-size:14px; opacity:0.5;';
         stopBtn.disabled = true;
 
-        container.appendChild(startBtn);
-        container.appendChild(stopBtn);
-        document.body.appendChild(container);
+        box.appendChild(startBtn);
+        box.appendChild(stopBtn);
+        document.body.appendChild(box);
+
+        let mediaRecorder;
+        let chunks = [];
 
         startBtn.onclick = () => {
             const stream = canvas.captureStream(60);
             mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
-            recordedChunks = [];
-            mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+            chunks = [];
+            
+            mediaRecorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+            
             mediaRecorder.onstop = () => {
-                const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                const url = URL.createObjectURL(blob);
+                const url = URL.createObjectURL(new Blob(chunks, { type: 'video/webm' }));
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'Genshin_MMD_Capture.webm';
+                a.download = 'HuTao_Dance.webm';
                 a.click();
             };
+            
             mediaRecorder.start();
-            startBtn.disabled = true;
             startBtn.innerText = '⏳ Recording...';
+            startBtn.style.background = '#555';
+            startBtn.disabled = true;
+            stopBtn.style.opacity = '1';
             stopBtn.disabled = false;
         };
 
         stopBtn.onclick = () => {
             mediaRecorder.stop();
-            startBtn.disabled = false;
             startBtn.innerText = '🔴 Record';
+            startBtn.style.background = '#4CAF50';
+            startBtn.disabled = false;
+            stopBtn.style.opacity = '0.5';
             stopBtn.disabled = true;
         };
-    }, 4000); 
-});
+    }
+}, 1500); // Har 1.5 second me check karega
 </script>
-</body></html>
